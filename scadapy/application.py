@@ -1,7 +1,9 @@
 import config
 import datetime
 import yaml
+import random
 
+from threading import Thread
 from .server import Server
 
 from pyModbusTCP.utils import decode_ieee, word_list_to_long
@@ -15,6 +17,7 @@ from matplotlib.animation import FuncAnimation
 
 class PlotCanvas(FigureCanvas):
     def __init__(self, parent=None, reg_addr=0, reg_nb=2, client=None):
+        self.animation = None
         self.figure = Figure()
         super().__init__(self.figure)
         self.ax = self.figure.add_subplot(111)
@@ -26,10 +29,20 @@ class PlotCanvas(FigureCanvas):
         self.reg_addr = reg_addr
         self.reg_nb = reg_nb
 
-        self.animation = FuncAnimation(self.figure, self.update_plot, fargs=(self.x_data, self.y_data), interval=100)
+        self.start_animation()
+
+    def start_animation(self):
+        color = config.PLOT_COLOR_LIST[random.randint(0, len(config.PLOT_COLOR_LIST) - 1)]
+
+        self.animation = FuncAnimation(self.figure,
+                                       self.update_plot,
+                                       frames=None,
+                                       fargs=(self.x_data, self.y_data, color),
+                                       interval=100)
+
         self.draw()
 
-    def update_plot(self, frame, xs, ys):
+    def update_plot(self, frame, xs, ys, color):
 
         read_reg = self.client.read_holding_registers(self.reg_addr, self.reg_nb)
 
@@ -48,7 +61,7 @@ class PlotCanvas(FigureCanvas):
         ys = ys[-size_limit:]
 
         self.ax.clear()
-        self.ax.plot(xs, ys)
+        self.ax.plot(xs, ys, color=color)
 
         self.ax.grid()
         self.ax.set_xticks([i for i in range(len(xs))])

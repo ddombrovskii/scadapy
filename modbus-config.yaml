@@ -7,6 +7,11 @@ servers:
     - reg2:
         reg_addr: 2
         reg_type: "Float"
+
+    - reg3:
+        reg_addr: 4
+        reg_type: "Integer"
+
   - 503:
     - reg1:
         reg_addr: 0

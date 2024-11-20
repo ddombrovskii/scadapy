@@ -1,0 +1,13 @@
+servers:
+  - 502:
+    - reg1:
+        reg_addr: 0
+        reg_type: "Float"
+
+    - reg2:
+        reg_addr: 2
+        reg_type: "Float"
+  - 503:
+    - reg1:
+        reg_addr: 0
+        reg_type: "Float"

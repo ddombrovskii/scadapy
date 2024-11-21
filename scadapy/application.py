@@ -6,11 +6,14 @@ import asyncio
 import threading
 
 from .server import Server
+from .db import DataServer
 
 from pyModbusTCP.utils import decode_ieee, word_list_to_long
 
 from PySide6 import QtWidgets
 
+import numpy as np
+from scipy.interpolate import make_interp_spline
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.animation import FuncAnimation
@@ -30,6 +33,8 @@ class PlotCanvas(FigureCanvas):
         self.reg_addr = reg_addr
         self.reg_nb = reg_nb
 
+        self.database = DataServer(client.port, reg_addr, {})
+
         self.loop = asyncio.get_event_loop()
         if not self.loop.is_running():
             threading.Thread(target=self.loop.run_forever, daemon=True).start()
@@ -48,7 +53,7 @@ class PlotCanvas(FigureCanvas):
                 value = 0
                 # print('unable to read registers')
 
-            self.x_data.append(datetime.datetime.now().strftime('%H:%M:%S %f'))
+            self.x_data.append(datetime.datetime.now().strftime('%H:%M:%S:%f'))
             self.y_data.append(value)
 
             await asyncio.sleep(0.1)
@@ -59,7 +64,7 @@ class PlotCanvas(FigureCanvas):
         self.animation = FuncAnimation(self.figure,
                                        self.update_plot,
                                        fargs=(self.x_data, self.y_data, color),
-                                       interval=100)
+                                       interval=300)
 
         self.draw()
 
@@ -68,6 +73,12 @@ class PlotCanvas(FigureCanvas):
         size_limit = config.PLOT_SIZE_LIMIT
         xs = xs[-size_limit:]
         ys = ys[-size_limit:]
+
+        values_dict = {xs[i]: ys[i] for i in range(len(xs))}
+        if self.database.data_created():
+            self.database.update(values_dict)
+        else:
+            self.database.insert(values_dict)
 
         self.ax.clear()
         self.ax.plot(xs, ys, color=color)

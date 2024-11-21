@@ -2,8 +2,9 @@ import config
 import datetime
 import yaml
 import random
+import asyncio
+import threading
 
-from threading import Thread
 from .server import Server
 
 from pyModbusTCP.utils import decode_ieee, word_list_to_long
@@ -29,32 +30,40 @@ class PlotCanvas(FigureCanvas):
         self.reg_addr = reg_addr
         self.reg_nb = reg_nb
 
+        self.loop = asyncio.get_event_loop()
+        if not self.loop.is_running():
+            threading.Thread(target=self.loop.run_forever, daemon=True).start()
+        self.loop.call_soon_threadsafe(asyncio.create_task, self.update_data())
+
         self.start_animation()
+
+    async def update_data(self):
+        while True:
+            read_reg = self.client.read_holding_registers(self.reg_addr, self.reg_nb)
+
+            if read_reg:
+                value = [decode_ieee(f) for f in word_list_to_long(read_reg)][0]
+                # print('read reg_addr 0 reg_nb 2')
+            else:
+                value = 0
+                # print('unable to read registers')
+
+            self.x_data.append(datetime.datetime.now().strftime('%H:%M:%S %f'))
+            self.y_data.append(value)
+
+            await asyncio.sleep(0.1)
 
     def start_animation(self):
         color = config.PLOT_COLOR_LIST[random.randint(0, len(config.PLOT_COLOR_LIST) - 1)]
 
         self.animation = FuncAnimation(self.figure,
                                        self.update_plot,
-                                       frames=None,
                                        fargs=(self.x_data, self.y_data, color),
                                        interval=100)
 
         self.draw()
 
     def update_plot(self, frame, xs, ys, color):
-
-        read_reg = self.client.read_holding_registers(self.reg_addr, self.reg_nb)
-
-        if read_reg:
-            value = [decode_ieee(f) for f in word_list_to_long(read_reg)][0]
-            print('read reg_addr 0 reg_nb 2')
-        else:
-            value = 0
-            print('unable to read registers')
-
-        xs.append(datetime.datetime.now().strftime('%H:%M:%S %f'))
-        ys.append(value)
 
         size_limit = config.PLOT_SIZE_LIMIT
         xs = xs[-size_limit:]

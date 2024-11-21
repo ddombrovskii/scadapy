@@ -3,16 +3,14 @@ APPLICATION_NAME = 'SCADA'
 APPLICATION_GEOMETRY_X = 100
 APPLICATION_GEOMETRY_Y = 100
 APPLICATION_GEOMETRY_W = 800
-APPLICATION_GEOMETRY_H = 600
+APPLICATION_GEOMETRY_H = 800
 PLOT_SIZE_LIMIT = 30
 PLOT_COLOR_LIST = ['blue',
                    'green',
                    'red',
                    'cyan',
                    'magenta',
-                   'yellow',
-                   'black',
-                   'white']
+                   'black']
 
 SERVERS_CONFIG_FILE = 'modbus-config.yaml'
 
